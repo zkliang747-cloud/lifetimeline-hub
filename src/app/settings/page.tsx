@@ -18,20 +18,30 @@ export default function Settings() {
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    checkAuth();
+    fetchProfile();
   }, []);
 
-  async function checkAuth() {
+  async function fetchProfile() {
     try {
-      const res = await fetch('/api/entries', { credentials: 'include' });
+      const res = await fetch('/api/profile', { credentials: 'include' });
       if (res.status === 401) {
         router.push('/');
         return;
       }
-      // For now, store user info in a simple way
-      setLoading(false);
+      const data = await res.json();
+      if (data.username) {
+        setProfile({
+          username: data.username,
+          display_name: data.display_name || '',
+          bio: data.bio || '',
+          avatar_url: data.avatar_url || '',
+          plan: data.plan || 'free',
+        });
+      }
     } catch {
       router.push('/');
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -41,18 +51,50 @@ export default function Settings() {
     setMessage('');
 
     try {
-      // Since we don't have a profile API yet, we'll save to localStorage as a simple approach
-      localStorage.setItem('timeline_profile', JSON.stringify(profile));
-      setMessage('✅ 资料保存成功');
+      const res = await fetch('/api/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          display_name: profile.display_name,
+          bio: profile.bio,
+          avatar_url: profile.avatar_url,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMessage('✅ 资料保存成功');
+        if (data.profile) {
+          setProfile(prev => ({ ...prev, ...data.profile }));
+        }
+      } else {
+        setMessage('❌ ' + (data.error || '保存失败'));
+      }
     } catch {
-      setMessage('❌ 保存失败');
+      setMessage('❌ 网络错误，请重试');
     } finally {
       setSaving(false);
     }
   };
 
-  const handleExport = () => {
-    window.open('/api/export', '_blank');
+  const handleExport = async () => {
+    try {
+      const res = await fetch('/api/export', { credentials: 'include' });
+      if (!res.ok) {
+        const data = await res.json();
+        alert(data.error || '导出失败');
+        return;
+      }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'timeline-export.json';
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      alert('导出失败');
+    }
   };
 
   if (loading) {
@@ -76,10 +118,10 @@ export default function Settings() {
               <label className="block text-sm font-medium text-[#57534E] mb-1">用户名</label>
               <input
                 value={profile.username}
-                onChange={e => setProfile({ ...profile, username: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-xl border border-[#E7E5E4] bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#B45309]/20 focus:border-[#B45309] transition-all"
-                placeholder="your_username"
+                disabled
+                className="w-full px-4 py-2.5 rounded-xl border border-[#E7E5E4] bg-[#F5F5F4] text-sm text-[#A8A29E] cursor-not-allowed"
               />
+              <p className="text-xs text-[#A8A29E] mt-1">注册后不可修改</p>
             </div>
             <div>
               <label className="block text-sm font-medium text-[#57534E] mb-1">显示名称</label>
@@ -109,8 +151,17 @@ export default function Settings() {
                 placeholder="https://example.com/avatar.jpg"
               />
               {profile.avatar_url && (
-                <img src={profile.avatar_url} alt="预览" className="mt-2 w-16 h-16 rounded-full object-cover" />
+                <img src={profile.avatar_url} alt="预览" className="mt-2 w-16 h-16 rounded-full object-cover border-2 border-[#E7E5E4]" />
               )}
+            </div>
+
+            <div className="flex items-center gap-2 text-sm text-[#57534E]">
+              <span>当前权益：</span>
+              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                profile.plan === 'sponsor' ? 'bg-[#FEF3C7] text-[#B45309]' : 'bg-[#F5F5F4] text-[#78716C]'
+              }`}>
+                {profile.plan === 'sponsor' ? '🌟 赞助版' : '免费版'}
+              </span>
             </div>
 
             {message && <p className="text-sm">{message}</p>}
@@ -118,7 +169,7 @@ export default function Settings() {
             <button
               type="submit"
               disabled={saving}
-              className="px-6 py-2.5 rounded-xl bg-[#B45309] text-white text-sm font-medium hover:bg-[#92400E] transition-colors disabled:opacity-50"
+              className="px-6 py-2.5 bg-[#1C1917] text-white rounded-xl text-sm font-medium hover:bg-[#292524] transition-colors disabled:opacity-50"
             >
               {saving ? '保存中...' : '保存资料'}
             </button>
@@ -127,25 +178,13 @@ export default function Settings() {
 
         <div className="bg-white rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.06)] p-6">
           <h2 className="font-medium text-[#1C1917] mb-2">数据导出</h2>
-          <p className="text-sm text-[#57534E] mb-4">导出所有时间轴节点 (JSON格式)，方便备份和迁移。</p>
+          <p className="text-sm text-[#57534E] mb-4">导出所有时间轴节点为 JSON 格式，便于备份和迁移。</p>
           <button
             onClick={handleExport}
-            className="px-6 py-2.5 rounded-xl border border-[#E7E5E4] text-[#57534E] text-sm font-medium hover:bg-[#FAFAF5] transition-colors"
+            className="px-6 py-2.5 border border-[#D6D3D1] text-[#1C1917] rounded-xl text-sm font-medium hover:bg-[#F5F5F4] transition-colors"
           >
-            📥 导出JSON
+            导出 JSON
           </button>
-        </div>
-
-        <div className="bg-white rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.06)] p-6 mt-6">
-          <h2 className="font-medium text-[#1C1917] mb-2">关于</h2>
-          <p className="text-sm text-[#57534E]">
-            人生时间轴 v1.0 · 用文字和影像，珍藏你的人生故事。
-          </p>
-          <p className="text-sm text-[#A8A29E] mt-1">
-            <a href={`/${profile.username || 'username'}`} className="text-[#B45309] hover:underline" target="_blank">
-              查看我的公开时间轴 →
-            </a>
-          </p>
         </div>
       </main>
     </div>

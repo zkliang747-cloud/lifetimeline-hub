@@ -18,7 +18,7 @@ export interface TimelineEntry {
 }
 
 // ===== Read/Write Helpers =====
-async function readJSON<T>(filePath: string, fallback: T): Promise<T> {
+export async function readJSON<T>(filePath: string, fallback: T): Promise<T> {
   const fs = await import('fs/promises');
   try {
     const data = await fs.readFile(filePath, 'utf-8');
@@ -28,7 +28,7 @@ async function readJSON<T>(filePath: string, fallback: T): Promise<T> {
   }
 }
 
-async function writeJSON(filePath: string, data: unknown) {
+export async function writeJSON(filePath: string, data: unknown) {
   const fs = await import('fs/promises');
   const dir = filePath.substring(0, filePath.lastIndexOf('/'));
   await fs.mkdir(dir, { recursive: true });
