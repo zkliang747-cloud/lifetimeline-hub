@@ -100,13 +100,44 @@ export default function TimelineForm({ entry, onSuccess, onCancel }: Props) {
 
       <div>
         <label className="block text-sm font-medium text-[#57534E] mb-1">正文</label>
-        <textarea
-          value={content}
-          onChange={e => setContent(e.target.value)}
-          rows={5}
-          className="w-full px-4 py-2.5 rounded-xl border border-[#E7E5E4] bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#B45309]/20 focus:border-[#B45309] transition-all resize-none"
-          placeholder="写下你的回忆、感悟、故事..."
-        />
+        <div className="relative">
+          <textarea
+            value={content}
+            onChange={e => setContent(e.target.value)}
+            rows={5}
+            className="w-full px-4 py-2.5 rounded-xl border border-[#E7E5E4] bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#B45309]/20 focus:border-[#B45309] transition-all resize-none"
+            placeholder="写下你的回忆、感悟、故事..."
+          />
+          <button
+            type="button"
+            onClick={async () => {
+              if (content.trim().length < 10) {
+                alert('正文至少10个字符才能润色');
+                return;
+              }
+              try {
+                const res = await fetch('/api/ai/polish', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ text: content }),
+                  credentials: 'include',
+                });
+                const data = await res.json();
+                if (data.polished) {
+                  setContent(data.polished);
+                } else {
+                  alert(data.error || '润色失败');
+                }
+              } catch {
+                alert('网络错误');
+              }
+            }}
+            className="absolute bottom-2 right-2 px-3 py-1.5 text-xs rounded-lg bg-[#B45309]/10 text-[#B45309] hover:bg-[#B45309]/20 transition-colors flex items-center gap-1"
+          >
+            ✨ AI润色
+          </button>
+        </div>
+        <p className="text-[10px] text-[#A8A29E] mt-1">免费用户每日限3次 · 至少10个字符</p>
       </div>
 
       <div>
