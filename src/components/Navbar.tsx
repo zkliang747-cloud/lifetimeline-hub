@@ -9,12 +9,22 @@ export default function Navbar() {
   return (
     <nav className="sticky top-0 z-40 bg-[#FAFAF5]/80 backdrop-blur-lg border-b border-[#E7E5E4]">
       <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
-        <Link href="/dashboard" className="flex items-center gap-2">
+        <Link href="/" className="flex items-center gap-2 hover:opacity-70 transition-opacity">
           <span className="text-lg">📖</span>
           <span className="font-serif font-bold text-[#1C1917]">人生时间轴</span>
         </Link>
 
         <div className="flex items-center gap-3">
+          <Link
+            href="/"
+            className={`text-sm px-3 py-1.5 rounded-lg transition-colors ${
+              pathname === '/' 
+                ? 'bg-[#1C1917] text-white' 
+                : 'text-[#57534E] hover:text-[#1C1917]'
+            }`}
+          >
+            首页
+          </Link>
           <Link
             href="/dashboard"
             className={`text-sm px-3 py-1.5 rounded-lg transition-colors ${

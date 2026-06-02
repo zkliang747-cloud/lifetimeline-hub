@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { groupEntriesByYear } from '@/lib/utils';
 import Link from 'next/link';
 
@@ -24,11 +24,44 @@ interface UserProfile {
   avatar_url: string;
 }
 
+function useShare() {
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      alert('链接已复制到剪贴板！');
+    } catch {
+      const input = document.createElement('input');
+      input.value = text;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand('copy');
+      document.body.removeChild(input);
+      alert('链接已复制到剪贴板！');
+    }
+  };
+
+  const shareLink = async (data: { title: string; url: string }) => {
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share(data);
+      } catch { /* user cancelled */ }
+    } else {
+      await copyToClipboard(data.url);
+    }
+  };
+
+  return { copyToClipboard, shareLink };
+}
+
 export default function TimelineClient({ username }: { username: string }) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [entries, setEntries] = useState<TimelineEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [generating, setGenerating] = useState(false);
+  const posterRef = useRef<HTMLDivElement>(null);
+
+  const { copyToClipboard, shareLink } = useShare();
 
   useEffect(() => {
     if (!username) return;
@@ -73,11 +106,68 @@ export default function TimelineClient({ username }: { username: string }) {
   const grouped = groupEntriesByYear(entries);
   const years = Object.keys(grouped).map(Number).sort((a, b) => a - b);
 
+  async function handleCopyLink() {
+    const url = window.location.href;
+    await copyToClipboard(url);
+  }
+
+  async function handleShare() {
+    const url = window.location.href;
+    await shareLink({ title: `${profile?.display_name || profile?.username} 的时间轴`, url });
+  }
+
+  async function handleGeneratePoster() {
+    setGenerating(true);
+    try {
+      const { generatePoster } = await import('@/lib/poster');
+      const canvas = await generatePoster({
+        username: profile!.username,
+        displayName: profile!.display_name || profile!.username,
+        bio: profile!.bio,
+        avatarUrl: profile!.avatar_url,
+        entryCount: entries.length,
+        entries: entries.slice(0, 6),
+      });
+      const link = document.createElement('a');
+      link.download = `${profile!.username}-timeline-poster.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch (err) {
+      console.error(err);
+      alert('海报生成失败，请重试');
+    }
+    setGenerating(false);
+  }
+
   return (
     <div className="min-h-screen bg-[#FAFAF5]">
+      {/* Top Nav Bar */}
+      <div className="sticky top-0 z-40 bg-[#FAFAF5]/80 backdrop-blur-lg border-b border-[#E7E5E4]">
+        <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2 hover:opacity-70 transition-opacity">
+            <span className="text-lg">📖</span>
+            <span className="font-serif font-semibold text-sm text-[#1C1917]">人生时间轴</span>
+          </Link>
+          <div className="flex items-center gap-2">
+            <button onClick={handleCopyLink} className="text-xs px-3 py-1.5 rounded-lg border border-[#D6D3D1] text-[#57534E] hover:bg-white transition-colors flex items-center gap-1">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+              复制链接
+            </button>
+            <button onClick={handleGeneratePoster} disabled={generating} className="text-xs px-3 py-1.5 rounded-lg bg-[#B45309] text-white hover:bg-[#92400E] transition-colors flex items-center gap-1 disabled:opacity-50">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+              {generating ? '生成中...' : '生成海报'}
+            </button>
+          </div>
+        </div>
+      </div>
+
       <main className="max-w-3xl mx-auto px-4 py-12">
         {/* Profile Header */}
         <div className="text-center mb-12">
+          <Link href="/" className="inline-flex items-center gap-1 text-xs text-[#A8A29E] hover:text-[#B45309] mb-4 transition-colors">
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+            返回首页
+          </Link>
           {profile.avatar_url && (
             <img src={profile.avatar_url} alt="" className="w-20 h-20 rounded-full object-cover mx-auto mb-4 shadow-sm" />
           )}
