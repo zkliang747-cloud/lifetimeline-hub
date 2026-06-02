@@ -14,6 +14,15 @@ export default function HomePage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
+  const [publicUsers, setPublicUsers] = useState<any[]>([]);
+  const [usersLoading, setUsersLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/public/users')
+      .then(r => r.json())
+      .then(data => { setPublicUsers(data.users || []); setUsersLoading(false); })
+      .catch(() => setUsersLoading(false));
+  }, []);
   const [mobileMenu, setMobileMenu] = useState(false);
 
   useEffect(() => {
@@ -190,6 +199,73 @@ export default function HomePage() {
                 <p className="mt-2 text-sm text-[#57534E] leading-relaxed">{feat.desc}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ====== 发现时间轴 ====== */}
+      <section className="py-20 px-4 bg-[#FAFAF5]">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="font-serif text-3xl md:text-4xl font-bold text-center text-[#1C1917]">
+            发现时间轴
+          </h2>
+          <p className="text-center text-[#57534E] mt-3 max-w-lg mx-auto">
+            看看大家都在记录什么人生故事
+          </p>
+
+          <div className="mt-10">
+            {usersLoading ? (
+              <div className="text-center text-[#A8A29E] py-12">加载中...</div>
+            ) : publicUsers.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-[#A8A29E] mb-2">暂无公开记录</p>
+                <button
+                  onClick={() => { setIsLogin(false); setShowAuth(true); }}
+                  className="text-[#B45309] text-sm hover:underline"
+                >
+                  成为第一个分享的人 →
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {publicUsers.map((user: any) => (
+                  <Link
+                    key={user.id}
+                    href={`/${user.username}`}
+                    className="group flex items-center gap-4 p-4 rounded-2xl bg-white border border-[#E7E5E4] hover:border-[#B45309]/30 hover:shadow-md transition-all duration-300"
+                  >
+                    <div className="w-12 h-12 rounded-full bg-[#B45309]/10 flex items-center justify-center text-[#B45309] font-bold text-lg shrink-0 overflow-hidden">
+                      {user.avatar_url ? (
+                        <img src={user.avatar_url} alt={user.display_name} className="w-full h-full object-cover" />
+                      ) : (
+                        user.display_name.charAt(0).toUpperCase()
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-[#1C1917] truncate group-hover:text-[#B45309] transition-colors">
+                        {user.display_name}
+                      </p>
+                      {user.bio && <p className="text-xs text-[#A8A29E] truncate mt-0.5">{user.bio}</p>}
+                      <p className="text-[10px] text-[#B45309] mt-1">
+                        {user.entry_count} 条记录
+                      </p>
+                    </div>
+                    <ArrowRight size={16} className="text-[#A8A29E] group-hover:text-[#B45309] group-hover:translate-x-1 transition-all shrink-0" />
+                  </Link>
+                ))}
+              </div>
+            )}
+
+            {publicUsers.length > 6 && (
+              <div className="text-center mt-6">
+                <button
+                  onClick={() => { setIsLogin(false); setShowAuth(true); }}
+                  className="text-sm text-[#B45309] hover:underline"
+                >
+                  注册后创建你的时间轴 →
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </section>

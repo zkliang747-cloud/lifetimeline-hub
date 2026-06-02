@@ -96,6 +96,47 @@ export function getYearsFromEntries(entries: TimelineEntry[]): number[] {
   return [...new Set(entries.map(e => e.year))].sort((a, b) => b - a);
 }
 
+// ===== Public Discovery =====
+export interface PublicUserProfile {
+  id: string;
+  username: string;
+  display_name: string;
+  bio: string;
+  avatar_url: string;
+  entry_count: number;
+}
+
+export async function getPublicUsers(): Promise<PublicUserProfile[]> {
+  const [fs, entries] = await Promise.all([
+    import('fs/promises'),
+    readJSON<TimelineEntry[]>(ENTRIES_FILE, []),
+  ]);
+  
+  const publicUserIds = new Set(entries.filter(e => e.is_public).map(e => e.user_id));
+  const entryCounts: Record<string, number> = {};
+  entries.filter(e => e.is_public).forEach(e => {
+    entryCounts[e.user_id] = (entryCounts[e.user_id] || 0) + 1;
+  });
+
+  try {
+    const usersData = await fs.readFile('/tmp/timeline-data/users.json', 'utf-8');
+    const users = JSON.parse(usersData);
+    return users
+      .filter((u: any) => publicUserIds.has(u.id))
+      .map((u: any) => ({
+        id: u.id,
+        username: u.username,
+        display_name: u.display_name || u.username,
+        bio: u.bio || '',
+        avatar_url: u.avatar_url || '',
+        entry_count: entryCounts[u.id] || 0,
+      }))
+      .sort((a: PublicUserProfile, b: PublicUserProfile) => b.entry_count - a.entry_count);
+  } catch {
+    return [];
+  }
+}
+
 export function groupEntriesByYear(entries: TimelineEntry[]): Record<number, TimelineEntry[]> {
   const groups: Record<number, TimelineEntry[]> = {};
   entries.forEach(entry => {
