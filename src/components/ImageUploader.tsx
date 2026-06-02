@@ -12,13 +12,23 @@ export default function ImageUploader({ onUpload, initialUrl }: Props) {
   const [preview, setPreview] = useState(initialUrl || '');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // 免费用户限制
+  const MAX_FILE_SIZE = 2 * 1024 * 1024; // 免费用户 2MB
+  const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      alert('图片大小不能超过5MB');
+    // 类型校验
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      alert('仅支持 JPG / PNG / WebP / GIF 格式');
+      return;
+    }
+
+    // 大小校验（免费用户上限 2MB）
+    if (file.size > MAX_FILE_SIZE) {
+      alert('图片大小不能超过 2MB');
       return;
     }
 

@@ -72,7 +72,7 @@ export default function HomePage() {
               onClick={() => { setIsLogin(false); setShowAuth(true); }}
               className="text-sm px-5 py-2 rounded-xl bg-[#B45309] text-white font-medium hover:bg-[#92400E] transition-colors shadow-sm"
             >
-              免费试用
+              开始使用
             </button>
             <button
               onClick={() => { setIsLogin(true); setShowAuth(true); }}
@@ -97,7 +97,7 @@ export default function HomePage() {
               onClick={() => { setIsLogin(false); setShowAuth(true); setMobileMenu(false); }}
               className="w-full py-2.5 rounded-xl bg-[#B45309] text-white font-medium text-sm"
             >
-              免费试用
+              开始使用
             </button>
             <button
               onClick={() => { setIsLogin(true); setShowAuth(true); setMobileMenu(false); }}
@@ -114,7 +114,7 @@ export default function HomePage() {
         <div className="max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#B45309]/10 text-[#B45309] text-sm font-medium mb-6">
             <Sparkles size={14} />
-            完全免费 · 即刻开始记录
+            用心记录 · 让时光有迹可循
           </div>
           <h1 className="font-serif text-4xl md:text-6xl font-bold text-[#1C1917] leading-tight tracking-wide">
             把人生写成一条
@@ -129,7 +129,7 @@ export default function HomePage() {
               onClick={() => { setIsLogin(false); setShowAuth(true); }}
               className="px-8 py-3.5 rounded-xl bg-[#B45309] text-white font-medium hover:bg-[#92400E] transition-colors shadow-lg shadow-[#B45309]/20 flex items-center gap-2"
             >
-              免费开始使用
+              开始记录
               <ArrowRight size={18} />
             </button>
             <a
@@ -140,34 +140,30 @@ export default function HomePage() {
             </a>
           </div>
 
-          {/* 演示预览图 */}
-          <div className="mt-16 mx-auto max-w-3xl">
-            <div className="bg-white rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.08)] p-6 md:p-8 border border-[#E7E5E4]">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-full bg-[#B45309]/10 flex items-center justify-center text-lg">🧑</div>
-                <div>
-                  <p className="text-sm font-medium text-[#1C1917]">张三的人生记忆</p>
-                  <p className="text-xs text-[#A8A29E]">记录了 23 个重要时刻</p>
-                </div>
-              </div>
-              <div className="space-y-4">
-                {[
-                  { year: '2025', title: '新公司入职', desc: '加入了一家做 AI 产品的创业公司，感觉每天都能学到新东西。', tag: '职场' },
-                  { year: '2024', title: '第一次出国旅行', desc: '日本京都的红叶季，美到让人说不出话。', tag: '旅行' },
-                  { year: '2024', title: '研究生毕业', desc: '三年的研究生生涯画上句号，感谢导师和同学们的陪伴。', tag: '学业' },
-                  { year: '2023', title: '开始学摄影', desc: '入手了第一台微单相机，开始记录生活中的光影。', tag: '爱好' },
-                ].map((item, i) => (
-                  <div key={i} className="flex gap-4 items-start border-l-2 border-[#B45309]/30 pl-4">
-                    <span className="text-xs font-bold text-[#B45309] whitespace-nowrap min-w-[3rem]">{item.year}</span>
-                    <div className="flex-1">
-                      <h4 className="text-sm font-semibold text-[#1C1917]">{item.title}</h4>
-                      <p className="text-xs text-[#57534E] mt-0.5">{item.desc}</p>
-                      <span className="inline-block mt-1 text-[10px] px-2 py-0.5 rounded-full bg-[#B45309]/10 text-[#B45309]">{item.tag}</span>
+          {/* 演示预览 — 时间轴样式 */}
+          <div className="mt-16 mx-auto max-w-lg">
+            <div className="relative pl-8">
+              <div className="absolute left-[7px] top-1 bottom-0 w-[2px] bg-gradient-to-b from-[#B45309]/40 to-[#B45309]/10" />
+              {[
+                { year: '2025', title: '新公司入职', desc: '加入了一家做 AI 产品的创业公司，迎接新的挑战。', tag: '职场' },
+                { year: '2024', title: '京都之旅', desc: '红叶季的京都，美到让人说不出话。', tag: '旅行' },
+                { year: '2024', title: '研究生毕业', desc: '三年时光画上句号，感谢一路相伴的人。', tag: '学业' },
+                { year: '2023', title: '开始学摄影', desc: '入手第一台微单，记录生活中的光影。', tag: '爱好' },
+              ].map((item, i) => (
+                <div key={i} className="relative pb-6 last:pb-0">
+                  <div className="absolute left-[-16px] top-1 w-[15px] h-[15px] rounded-full bg-[#B45309] ring-2 ring-[#FAFAF5]" />
+                  <div className="bg-white rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.06)] p-4 md:p-5 hover:shadow-[0_4px_16px_rgba(0,0,0,0.1)] transition-shadow ml-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs font-bold text-[#B45309]">{item.year}</span>
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-[#FFFBEB] text-[#B45309]/70">{item.tag}</span>
                     </div>
+                    <h4 className="text-sm font-semibold text-[#1C1917]">{item.title}</h4>
+                    <p className="text-xs text-[#57534E] mt-1 leading-relaxed">{item.desc}</p>
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
             </div>
+            <p className="text-center text-xs text-[#A8A29E] mt-6">这就是你的时间轴 · 点击下方开始创建</p>
           </div>
         </div>
       </section>
@@ -270,40 +266,113 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ====== 定价 / 免费试用 ====== */}
-      <section className="py-20 px-4 bg-[#FAFAF5]">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="font-serif text-3xl md:text-4xl font-bold text-[#1C1917]">开始记录你的人生故事</h2>
-          <p className="mt-3 text-[#57534E]">无需信用卡，注册即享全部基础功能</p>
-          <div className="mt-10 max-w-sm mx-auto">
-            <div className="bg-white rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.08)] p-8 border border-[#E7E5E4] relative overflow-hidden">
-              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#B45309] to-[#D97706]" />
-              <p className="text-xs font-medium text-[#B45309] tracking-widest uppercase mb-2">当前方案</p>
-              <p className="text-5xl font-bold text-[#1C1917]">免费</p>
-              <p className="text-sm text-[#57534E] mt-2">永久免费 · 无隐藏费用</p>
-              <ul className="mt-6 space-y-3 text-left">
+      {/* ====== 定价方案（三级） ====== */}
+      <section id="pricing" className="py-20 px-4 bg-white">
+        <div className="max-w-5xl mx-auto">
+          <h2 className="font-serif text-3xl md:text-4xl font-bold text-center text-[#1C1917]">选择你的方案</h2>
+          <p className="text-center text-[#57534E] mt-3 max-w-lg mx-auto text-sm">
+            所有方案均包含完整的基础功能，升级解锁更多权益
+          </p>
+          <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* 免费版 */}
+            <div className="bg-[#FAFAF5] rounded-2xl p-6 md:p-8 border border-[#E7E5E4] relative flex flex-col">
+              <p className="text-xs font-medium text-[#B45309] tracking-widest uppercase mb-2">入门</p>
+              <p className="text-4xl font-bold text-[#1C1917]">免费</p>
+              <p className="text-xs text-[#A8A29E] mt-1">适合刚开始记录</p>
+              <ul className="mt-6 space-y-3 flex-1">
                 {[
-                  '无限时间轴节点创建',
+                  '无限时间轴节点',
                   '支持图文记录',
                   '个人公开主页',
                   'AI 润色 · 每日 3 次',
-                  '私密/公开自由切换',
+                  '私密/公开切换',
                   'JSON 数据导出',
                 ].map((item, i) => (
                   <li key={i} className="flex items-start gap-2 text-sm text-[#57534E]">
-                    <span className="text-[#065F46] mt-0.5">✓</span>
+                    <span className="text-[#065F46] mt-0.5 shrink-0">✓</span>
                     {item}
                   </li>
                 ))}
               </ul>
               <button
                 onClick={() => { setIsLogin(false); setShowAuth(true); }}
-                className="mt-8 w-full py-3 rounded-xl bg-[#B45309] text-white font-medium hover:bg-[#92400E] transition-colors shadow-lg shadow-[#B45309]/20"
+                className="mt-6 w-full py-2.5 rounded-xl border border-[#D6D3D1] text-[#1C1917] font-medium hover:bg-white transition-colors text-sm"
               >
-                免费试用 →
+                开始使用
               </button>
-              <p className="mt-3 text-[10px] text-[#A8A29E]">无需绑定支付方式 · 注册即用</p>
             </div>
+
+            {/* 月付版 - 推荐 */}
+            <div className="bg-white rounded-2xl p-6 md:p-8 border-2 border-[#B45309] shadow-[0_8px_32px_rgba(180,83,9,0.12)] relative flex flex-col">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#B45309] text-white text-xs px-4 py-1 rounded-full font-medium">
+                最受欢迎
+              </div>
+              <p className="text-xs font-medium text-[#B45309] tracking-widest uppercase mb-2">赞助者</p>
+              <div className="flex items-baseline gap-1">
+                <span className="text-4xl font-bold text-[#1C1917]">¥19</span>
+                <span className="text-sm text-[#57534E]">/月</span>
+              </div>
+              <p className="text-xs text-[#A8A29E] mt-1">适合持续记录的用户</p>
+              <ul className="mt-6 space-y-3 flex-1">
+                {[
+                  '全部免费权益',
+                  'AI 润色 · 无限次数',
+                  '每节点最多 10 张图片',
+                  '单图最大 10MB',
+                  '生成分享海报',
+                  '专属赞助者徽章',
+                ].map((item, i) => (
+                  <li key={i} className="flex items-start gap-2 text-sm text-[#57534E]">
+                    <span className="text-[#B45309] mt-0.5 shrink-0">✦</span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+              <button
+                onClick={() => { setIsLogin(false); setShowAuth(true); }}
+                className="mt-6 w-full py-2.5 rounded-xl bg-[#B45309] text-white font-medium hover:bg-[#92400E] transition-colors shadow-lg shadow-[#B45309]/20 text-sm"
+              >
+                选择月付
+              </button>
+            </div>
+
+            {/* 年付版 */}
+            <div className="bg-[#FAFAF5] rounded-2xl p-6 md:p-8 border border-[#E7E5E4] relative flex flex-col">
+              <p className="text-xs font-medium text-[#B45309] tracking-widest uppercase mb-2">年付赞助者</p>
+              <div className="flex items-baseline gap-1">
+                <span className="text-4xl font-bold text-[#1C1917]">¥199</span>
+                <span className="text-sm text-[#57534E]">/年</span>
+              </div>
+              <p className="text-xs text-[#A8A29E] mt-1">省 36%，适合长期使用</p>
+              <ul className="mt-6 space-y-3 flex-1">
+                {[
+                  '全部月付权益',
+                  'AI 年度回顾报告',
+                  '优先功能更新',
+                  '自定义主题色',
+                  '专属客服支持',
+                  '🎁 买一年送一个月',
+                ].map((item, i) => (
+                  <li key={i} className="flex items-start gap-2 text-sm text-[#57534E]">
+                    <span className="text-[#B45309] mt-0.5 shrink-0">✦</span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+              <button
+                onClick={() => { setIsLogin(false); setShowAuth(true); }}
+                className="mt-6 w-full py-2.5 rounded-xl border border-[#D6D3D1] text-[#1C1917] font-medium hover:bg-white transition-colors text-sm"
+              >
+                选择年付
+              </button>
+            </div>
+          </div>
+
+          {/* 成本与定价说明 */}
+          <div className="mt-10 text-center text-xs text-[#A8A29E] max-w-xl mx-auto space-y-1">
+            <p>当前为预售定价，正式上线后可能调整。</p>
+            <p>定价覆盖：服务器存储 · AI API 调用 · 图片 CDN · 域名与带宽</p>
+            <p>免费用户每人每日约产生 ¥0.03 成本 · 年付用户平均每日仅 ¥0.55</p>
           </div>
         </div>
       </section>
@@ -349,7 +418,7 @@ export default function HomePage() {
                 {isLogin ? '欢迎回来' : '开始记录'}
               </h2>
               <p className="text-xs text-[#57534E] mt-1">
-                {isLogin ? '登录你的时间轴' : '注册账号，永久免费'}
+                {isLogin ? '登录你的时间轴' : '注册账号 · 即刻开始'}
               </p>
             </div>
 
