@@ -143,16 +143,47 @@ export default function Settings() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#57534E] mb-1">头像URL</label>
-              <input
-                value={profile.avatar_url}
-                onChange={e => setProfile({ ...profile, avatar_url: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-xl border border-[#E7E5E4] bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#B45309]/20 focus:border-[#B45309] transition-all"
-                placeholder="https://example.com/avatar.jpg"
-              />
-              {profile.avatar_url && (
-                <img src={profile.avatar_url} alt="预览" className="mt-2 w-16 h-16 rounded-full object-cover border-2 border-[#E7E5E4]" />
-              )}
+              <label className="block text-sm font-medium text-[#57534E] mb-1">头像</label>
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  {profile.avatar_url ? (
+                    <img src={profile.avatar_url} alt="头像" className="w-16 h-16 rounded-full object-cover border-2 border-[#E7E5E4]" />
+                  ) : (
+                    <div className="w-16 h-16 rounded-full bg-[#F5F5F4] border-2 border-dashed border-[#D6D3D1] flex items-center justify-center text-[#A8A29E] text-xs">无头像</div>
+                  )}
+                </div>
+                <label className="cursor-pointer px-4 py-2 border border-[#D6D3D1] rounded-xl text-sm text-[#57534E] hover:bg-[#F5F5F4] transition-colors">
+                  上传图片
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const formData = new FormData();
+                      formData.append('file', file);
+                      const res = await fetch('/api/upload', { method: 'POST', credentials: 'include', body: formData });
+                      const data = await res.json();
+                      if (data.url) {
+                        setProfile(prev => ({ ...prev, avatar_url: data.url }));
+                      } else {
+                        alert(data.error || '上传失败');
+                      }
+                    }}
+                  />
+                </label>
+                {profile.avatar_url && (
+                  <button
+                    type="button"
+                    onClick={() => setProfile(prev => ({ ...prev, avatar_url: '' }))}
+                    className="text-xs text-[#BE123C] hover:underline"
+                  >
+                    移除
+                  </button>
+                )}
+              </div>
+              <p className="text-xs text-[#A8A29E] mt-1">支持 JPG/PNG/WebP，建议 1:1 比例</p>
             </div>
 
             <div className="flex items-center gap-2 text-sm text-[#57534E]">

@@ -338,9 +338,53 @@ export default function HomePage() {
                 {loading ? '处理中...' : isLogin ? '登录' : '注册并开始记录'}
               </button>
             </form>
+
+            <div className="mt-4 text-xs text-center text-[#A8A29E]">
+              注册即表示同意
+              <Link href="/terms" className="text-[#B45309] hover:underline mx-1">服务条款</Link>
+              和
+              <Link href="/privacy" className="text-[#B45309] hover:underline mx-1">隐私政策</Link>
+            </div>
           </div>
         </div>
       )}
+
+      {/* Footer */}
+      <footer className="border-t border-[#E7E5E4] bg-white/80">
+        <div className="max-w-6xl mx-auto px-4 py-10">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
+            <div>
+              <h3 className="font-serif font-bold text-[#1C1917] mb-3">📖 人生时间轴</h3>
+              <p className="text-xs text-[#A8A29E]">把人生写成一条温暖的故事线</p>
+            </div>
+            <div>
+              <h4 className="text-sm font-medium text-[#1C1917] mb-3">产品</h4>
+              <ul className="space-y-2 text-xs text-[#57534E]">
+                <li><Link href="/" className="hover:text-[#B45309] transition-colors">功能介绍</Link></li>
+                <li><Link href="/dashboard" className="hover:text-[#B45309] transition-colors">开始记录</Link></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="text-sm font-medium text-[#1C1917] mb-3">法律</h4>
+              <ul className="space-y-2 text-xs text-[#57534E]">
+                <li><Link href="/privacy" className="hover:text-[#B45309] transition-colors">隐私政策</Link></li>
+                <li><Link href="/terms" className="hover:text-[#B45309] transition-colors">服务条款</Link></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="text-sm font-medium text-[#1C1917] mb-3">联系</h4>
+              <ul className="space-y-2 text-xs text-[#57534E]">
+                <li>privacy@lifetimeline.app</li>
+                <li>legal@lifetimeline.app</li>
+              </ul>
+            </div>
+          </div>
+          <div className="border-t border-[#E7E5E4] pt-6 text-center text-xs text-[#A8A29E]">
+            <p>© {new Date().getFullYear()} 人生时间轴 LifeTimeline Hub. 保留所有权利。</p>
+            <p className="mt-1">本服务按「现状」提供，使用即表示同意我们的服务条款和隐私政策。</p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
