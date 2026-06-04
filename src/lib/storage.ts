@@ -45,16 +45,5 @@ export async function deleteFile(key: string): Promise<boolean> {
   }
 }
 
-export function getFileKeyFromUrl(url: string): string {
-  // Extract the key from the presigned URL
-  // The key is typically the path after the bucket endpoint
-  try {
-    const urlObj = new URL(url);
-    const pathParts = urlObj.pathname.split('/');
-    // The key is everything after the bucket name
-    // For presigned URLs, it might be encoded differently
-    return decodeURIComponent(pathParts.slice(2).join('/'));
-  } catch {
-    return url;
-  }
-}
+export const uploadToS3 = uploadFile;
+export const deleteFromS3 = deleteFile;

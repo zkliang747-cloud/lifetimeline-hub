@@ -1,30 +1,22 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getTokenFromCookies, getSessionUser } from '@/lib/auth';
-import { getAllEntries } from '@/lib/store';
+import { NextResponse } from 'next/server'
+import { getSessionUser } from '@/lib/auth'
+import { supabaseAdmin } from '@/lib/supabase'
 
-export async function GET(request: NextRequest) {
-  try {
-    const token = await getTokenFromCookies();
-    const user = await getSessionUser(token);
-    
-    if (!user) {
-      return NextResponse.json({ error: '未登录' }, { status: 401 });
-    }
+export async function GET() {
+  const user = await getSessionUser()
+  if (!user) return NextResponse.json({ error: '未登录' }, { status: 401 })
 
-    const entries = await getAllEntries(user.id);
-    const sorted = entries.sort((a, b) => a.year - b.year || new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+  const { data: entries } = await supabaseAdmin
+    .from('timeline_entries')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('year', { ascending: true })
 
-    // Return as downloadable JSON
-    const jsonStr = JSON.stringify(sorted, null, 2);
-    return new NextResponse(jsonStr, {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Content-Disposition': 'attachment; filename="timeline-export.json"',
-      },
-    });
-  } catch (error) {
-    console.error('Export error:', error);
-    return NextResponse.json({ error: '导出失败' }, { status: 500 });
-  }
+  const json = JSON.stringify(entries || [], null, 2)
+  return new NextResponse(json, {
+    headers: {
+      'Content-Type': 'application/json',
+      'Content-Disposition': 'attachment; filename="timeline-export.json"',
+    },
+  })
 }

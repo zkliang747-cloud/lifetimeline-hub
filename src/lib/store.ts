@@ -1,152 +1,195 @@
-import crypto from 'crypto';
+import { supabaseAdmin } from './supabase'
 
-const DATA_DIR = '/tmp/timeline-data';
-const ENTRIES_FILE = `${DATA_DIR}/entries.json`;
+// ============ Profiles ============
 
-// ===== Entry Types =====
-export interface TimelineEntry {
-  id: string;
-  user_id: string;
-  year: number;
-  title: string;
-  content: string;
-  tags: string[];
-  is_public: boolean;
-  image_url: string | null;
-  created_at: string;
-  updated_at: string;
+export async function getProfile(userId: string) {
+  const { data } = await supabaseAdmin
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .single()
+  return data
 }
 
-// ===== Read/Write Helpers =====
-export async function readJSON<T>(filePath: string, fallback: T): Promise<T> {
-  const fs = await import('fs/promises');
-  try {
-    const data = await fs.readFile(filePath, 'utf-8');
-    return JSON.parse(data);
-  } catch {
-    return fallback;
+export async function getProfileByUsername(username: string) {
+  const { data } = await supabaseAdmin
+    .from('profiles')
+    .select('*')
+    .eq('username', username)
+    .single()
+  return data
+}
+
+export async function updateProfile(userId: string, updates: {
+  display_name?: string
+  bio?: string
+  avatar_url?: string
+}) {
+  const { error } = await supabaseAdmin
+    .from('profiles')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', userId)
+  return error
+}
+
+export async function listPublicUsers() {
+  const { data } = await supabaseAdmin
+    .from('profiles')
+    .select('id, username, display_name, bio, avatar_url')
+    .limit(50)
+  return data || []
+}
+
+// ============ Entries ============
+
+export async function getEntries(userId: string) {
+  const { data } = await supabaseAdmin
+    .from('timeline_entries')
+    .select('*')
+    .eq('user_id', userId)
+    .order('year', { ascending: false })
+    .order('created_at', { ascending: false })
+  return data || []
+}
+
+export async function getPublicEntries(username: string) {
+  const profile = await getProfileByUsername(username)
+  if (!profile) return []
+  const { data } = await supabaseAdmin
+    .from('timeline_entries')
+    .select('*')
+    .eq('user_id', profile.id)
+    .eq('is_public', true)
+    .order('year', { ascending: true })
+    .order('created_at', { ascending: true })
+  return data || []
+}
+
+export async function createEntry(userId: string, entry: {
+  year: number
+  title: string
+  content?: string
+  tags?: string[]
+  is_public?: boolean
+  image_url?: string
+}) {
+  const { data, error } = await supabaseAdmin
+    .from('timeline_entries')
+    .insert([{
+      user_id: userId,
+      year: entry.year,
+      title: entry.title,
+      content: entry.content || '',
+      tags: entry.tags || [],
+      is_public: entry.is_public ?? true,
+      image_url: entry.image_url || '',
+    }])
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function updateEntry(id: string, userId: string, updates: {
+  year?: number
+  title?: string
+  content?: string
+  tags?: string[]
+  is_public?: boolean
+  image_url?: string
+}) {
+  const { error } = await supabaseAdmin
+    .from('timeline_entries')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .eq('user_id', userId)
+  return error
+}
+
+export async function deleteEntry(id: string, userId: string) {
+  const { error } = await supabaseAdmin
+    .from('timeline_entries')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', userId)
+  return error
+}
+
+// ============ AI Usage ============
+
+export async function getAiUsage(userId: string, date: string) {
+  const { data } = await supabaseAdmin
+    .from('ai_usage')
+    .select('count')
+    .eq('user_id', userId)
+    .eq('date', date)
+    .maybeSingle()
+  return data?.count || 0
+}
+
+export async function incrementAiUsage(userId: string, date: string) {
+  const existing = await getAiUsage(userId, date)
+  if (existing === 0) {
+    await supabaseAdmin
+      .from('ai_usage')
+      .insert([{ user_id: userId, date, count: 1 }])
+  } else {
+    await supabaseAdmin
+      .from('ai_usage')
+      .update({ count: existing + 1 })
+      .eq('user_id', userId)
+      .eq('date', date)
   }
 }
 
-export async function writeJSON(filePath: string, data: unknown) {
-  const fs = await import('fs/promises');
-  const dir = filePath.substring(0, filePath.lastIndexOf('/'));
-  await fs.mkdir(dir, { recursive: true });
-  await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf-8');
+// ============ Admin ============
+
+export async function updateUserPlan(email: string, plan: string) {
+  const { data: users } = await supabaseAdmin.auth.admin.listUsers()
+  const user = users.users.find(u => u.email === email)
+  if (!user) throw new Error('用户不存在')
+  const { error } = await supabaseAdmin
+    .from('profiles')
+    .update({ plan })
+    .eq('id', user.id)
+  if (error) throw error
+  return user
 }
 
-// ===== CRUD Operations =====
-export async function getAllEntries(userId: string): Promise<TimelineEntry[]> {
-  const entries = await readJSON<TimelineEntry[]>(ENTRIES_FILE, []);
-  return entries
-    .filter(e => e.user_id === userId)
-    .sort((a, b) => b.year - a.year || new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+export async function getEntryCountByUsername(username: string) {
+  const profile = await getProfileByUsername(username)
+  if (!profile) return 0
+  const { count } = await supabaseAdmin
+    .from('timeline_entries')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', profile.id)
+    .eq('is_public', true)
+  return count || 0
 }
 
-export async function getPublicEntries(userId: string): Promise<TimelineEntry[]> {
-  const entries = await readJSON<TimelineEntry[]>(ENTRIES_FILE, []);
-  return entries
-    .filter(e => e.user_id === userId && e.is_public)
-    .sort((a, b) => a.year - b.year || new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-}
+// ============================================
+// 文件存储回退 (当 Supabase 不可用时)
+// ============================================
+const DATA_DIR = '/tmp/timeline-data'
 
-export async function createEntry(data: Omit<TimelineEntry, 'id' | 'created_at' | 'updated_at'>): Promise<TimelineEntry> {
-  const entries = await readJSON<TimelineEntry[]>(ENTRIES_FILE, []);
-  const now = new Date().toISOString();
-  const entry: TimelineEntry = {
-    ...data,
-    id: crypto.randomUUID(),
-    created_at: now,
-    updated_at: now,
-  };
-  entries.push(entry);
-  await writeJSON(ENTRIES_FILE, entries);
-  return entry;
-}
-
-export async function updateEntry(id: string, userId: string, data: Partial<TimelineEntry>): Promise<TimelineEntry | null> {
-  const entries = await readJSON<TimelineEntry[]>(ENTRIES_FILE, []);
-  const idx = entries.findIndex(e => e.id === id && e.user_id === userId);
-  if (idx === -1) return null;
-  
-  entries[idx] = {
-    ...entries[idx],
-    ...data,
-    id: entries[idx].id,
-    user_id: entries[idx].user_id,
-    created_at: entries[idx].created_at,
-    updated_at: new Date().toISOString(),
-  };
-  await writeJSON(ENTRIES_FILE, entries);
-  return entries[idx];
-}
-
-export async function deleteEntry(id: string, userId: string): Promise<boolean> {
-  const entries = await readJSON<TimelineEntry[]>(ENTRIES_FILE, []);
-  const idx = entries.findIndex(e => e.id === id && e.user_id === userId);
-  if (idx === -1) return false;
-  
-  const deleted = entries.splice(idx, 1);
-  await writeJSON(ENTRIES_FILE, entries);
-  return deleted.length > 0;
-}
-
-// ===== Year/Aggregation Helpers =====
-export function getYearsFromEntries(entries: TimelineEntry[]): number[] {
-  return [...new Set(entries.map(e => e.year))].sort((a, b) => b - a);
-}
-
-// ===== Public Discovery =====
-export interface PublicUserProfile {
-  id: string;
-  username: string;
-  display_name: string;
-  bio: string;
-  avatar_url: string;
-  entry_count: number;
-}
-
-export async function getPublicUsers(): Promise<PublicUserProfile[]> {
-  const [fs, entries] = await Promise.all([
-    import('fs/promises'),
-    readJSON<TimelineEntry[]>(ENTRIES_FILE, []),
-  ]);
-  
-  const publicUserIds = new Set(entries.filter(e => e.is_public).map(e => e.user_id));
-  const entryCounts: Record<string, number> = {};
-  entries.filter(e => e.is_public).forEach(e => {
-    entryCounts[e.user_id] = (entryCounts[e.user_id] || 0) + 1;
-  });
-
+export async function readJSON(filename: string): Promise<any> {
+  const fs = await import('fs/promises')
+  const path = await import('path')
+  const filePath = path.join(DATA_DIR, filename)
   try {
-    const usersData = await fs.readFile('/tmp/timeline-data/users.json', 'utf-8');
-    const users = JSON.parse(usersData);
-    return users
-      .filter((u: any) => publicUserIds.has(u.id))
-      .map((u: any) => ({
-        id: u.id,
-        username: u.username,
-        display_name: u.display_name || u.username,
-        bio: u.bio || '',
-        avatar_url: u.avatar_url || '',
-        entry_count: entryCounts[u.id] || 0,
-      }))
-      .sort((a: PublicUserProfile, b: PublicUserProfile) => b.entry_count - a.entry_count);
+    const data = await fs.readFile(filePath, 'utf-8')
+    return JSON.parse(data)
   } catch {
-    return [];
+    return null
   }
 }
 
-export function groupEntriesByYear(entries: TimelineEntry[]): Record<number, TimelineEntry[]> {
-  const groups: Record<number, TimelineEntry[]> = {};
-  entries.forEach(entry => {
-    if (!groups[entry.year]) groups[entry.year] = [];
-    groups[entry.year].push(entry);
-  });
-  Object.keys(groups).forEach(year => {
-    groups[Number(year)].sort((a, b) => 
-      new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-    );
-  });
-  return groups;
+export async function writeJSON(filename: string, data: any): Promise<void> {
+  const fs = await import('fs/promises')
+  const path = await import('path')
+  const filePath = path.join(DATA_DIR, filename)
+  try {
+    await fs.mkdir(DATA_DIR, { recursive: true })
+    await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf-8')
+  } catch {}
 }

@@ -1,36 +1,66 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server'
+import { supabaseAdmin } from '@/lib/supabase'
+import { setSessionCookie, createFileUser, createFileSession } from '@/lib/auth'
 
-export async function POST(request: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
-    const { username, email, password } = await request.json();
-    
-    if (!username || !email || !password) {
-      return NextResponse.json({ error: '所有字段都是必填的' }, { status: 400 });
-    }
+    const { username, email, password } = await req.json()
 
-    if (password.length < 6) {
-      return NextResponse.json({ error: '密码至少6个字符' }, { status: 400 });
+    if (!username || !email || !password) {
+      return NextResponse.json({ error: '所有字段都是必填的' }, { status: 400 })
     }
 
     if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) {
-      return NextResponse.json({ error: '用户名只能包含字母、数字和下划线，3-20个字符' }, { status: 400 });
+      return NextResponse.json({ error: '用户名限3-20位字母数字下划线' }, { status: 400 })
     }
 
-    const { createUser, createSession, setSessionCookie } = await import('@/lib/auth');
-    
-    const user = await createUser(username, email, password);
-    const token = await createSession(user.id);
+    // ===== 使用 Supabase（部署环境） =====
+    if (supabaseAdmin) {
+      // 检查用户名是否已存在
+      const { data: existing } = await supabaseAdmin
+        .from('profiles')
+        .select('id')
+        .eq('username', username)
+        .maybeSingle()
+      if (existing) {
+        return NextResponse.json({ error: '用户名已被占用' }, { status: 409 })
+      }
 
-    const response = NextResponse.json({
-      success: true,
-      user: { id: user.id, username: user.username, email: user.email, display_name: user.display_name },
-    });
-    
-    response.headers.append('Set-Cookie', setSessionCookie(token));
-    return response;
-  } catch (error: any) {
-    console.error('Register error:', error);
-    const message = error?.message || '注册失败';
-    return NextResponse.json({ error: message }, { status: 400 });
+      const { data, error } = await supabaseAdmin.auth.admin.createUser({
+        email, password,
+        email_confirm: true,
+        user_metadata: { username },
+      })
+      if (error) {
+        if (error.message.includes('already registered')) {
+          return NextResponse.json({ error: '该邮箱已被注册' }, { status: 409 })
+        }
+        return NextResponse.json({ error: error.message }, { status: 400 })
+      }
+
+      const { data: sessionData } = await supabaseAdmin.auth.signInWithPassword({ email, password })
+      const cookie = setSessionCookie(sessionData!.session!.access_token)
+      const res = NextResponse.json({
+        success: true,
+        user: { id: data.user!.id, username, email: data.user!.email },
+      })
+      res.cookies.set(cookie.name, cookie.value, cookie.attributes)
+      return res
+    }
+
+    // ===== 降级：文件存储（沙箱预览） =====
+    const result = await createFileUser(username, email, password)
+    if (result.error) {
+      return NextResponse.json({ error: result.error }, { status: 409 })
+    }
+    const token = await createFileSession(result.user!.id)
+    const cookie = setSessionCookie(token)
+    const res = NextResponse.json({ success: true, user: result.user })
+    res.cookies.set(cookie.name, cookie.value, cookie.attributes)
+    return res
+
+  } catch (e) {
+    console.error('Register error:', e)
+    return NextResponse.json({ error: '注册失败，请稍后重试' }, { status: 500 })
   }
 }

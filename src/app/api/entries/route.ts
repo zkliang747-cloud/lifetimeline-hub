@@ -1,55 +1,46 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getTokenFromCookies } from '@/lib/auth';
-import { getAllEntries, createEntry } from '@/lib/store';
+import { NextRequest, NextResponse } from 'next/server'
+import { getSessionUser } from '@/lib/auth'
+import { supabaseAdmin } from '@/lib/supabase'
+import { getEntries, createEntry } from '@/lib/store'
 
-export async function GET(request: NextRequest) {
-  try {
-    const token = await getTokenFromCookies();
-    const { getSessionUser } = await import('@/lib/auth');
-    const user = await getSessionUser(token);
-    
-    if (!user) {
-      return NextResponse.json({ error: '未登录' }, { status: 401 });
-    }
+export async function GET() {
+  const user = await getSessionUser()
+  if (!user) return NextResponse.json({ error: '未登录' }, { status: 401 })
 
-    const entries = await getAllEntries(user.id);
-    return NextResponse.json(entries);
-  } catch (error) {
-    console.error('Get entries error:', error);
-    return NextResponse.json({ error: '获取记录失败' }, { status: 500 });
+  if (supabaseAdmin) {
+    const { data, error } = await supabaseAdmin
+      .from('timeline_entries')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('year', { ascending: false })
+      .order('created_at', { ascending: false })
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json(data || [])
   }
+
+  // File fallback
+  const entries = getEntries(user.id)
+  return NextResponse.json(entries)
 }
 
-export async function POST(request: NextRequest) {
-  try {
-    const token = await getTokenFromCookies();
-    const { getSessionUser } = await import('@/lib/auth');
-    const user = await getSessionUser(token);
-    
-    if (!user) {
-      return NextResponse.json({ error: '未登录' }, { status: 401 });
-    }
+export async function POST(req: NextRequest) {
+  const user = await getSessionUser()
+  if (!user) return NextResponse.json({ error: '未登录' }, { status: 401 })
 
-    const body = await request.json();
-    const { year, title, content, tags, is_public, image_url } = body;
+  const body = await req.json()
+  const { year, title, content, tags, is_public, image_url } = body
 
-    if (!year || !title) {
-      return NextResponse.json({ error: '年份和标题不能为空' }, { status: 400 });
-    }
-
-    const entry = await createEntry({
-      user_id: user.id,
-      year: parseInt(year),
-      title,
-      content: content || '',
-      tags: tags || [],
-      is_public: is_public !== false,
-      image_url: image_url || null,
-    });
-
-    return NextResponse.json(entry, { status: 201 });
-  } catch (error) {
-    console.error('Create entry error:', error);
-    return NextResponse.json({ error: '创建记录失败' }, { status: 500 });
+  if (supabaseAdmin) {
+    const { data, error } = await supabaseAdmin
+      .from('timeline_entries')
+      .insert([{ user_id: user.id, year: parseInt(year), title, content: content || '', tags: tags || [], is_public: is_public ?? true, image_url: image_url || '' }])
+      .select()
+      .single()
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json(data, { status: 201 })
   }
+
+  // File fallback
+  const entry = await createEntry(user.id, { year: parseInt(year), title, content: content || '', tags: tags || [], is_public: is_public ?? true, image_url: image_url || '' })
+  return NextResponse.json(entry, { status: 201 })
 }
