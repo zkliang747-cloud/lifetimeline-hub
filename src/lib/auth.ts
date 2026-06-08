@@ -2,6 +2,7 @@ import { supabaseAdmin } from './supabase'
 import { cookies } from 'next/headers'
 import crypto from 'crypto'
 import { readJSON, writeJSON } from './store'
+import argon2 from 'argon2'
 
 const DATA_DIR = process.env.COZE_PROJECT_ENV === 'PROD' ? '/tmp/timeline-data' : '/tmp/timeline-data'
 const USERS_FILE = `${DATA_DIR}/users.json`
@@ -109,6 +110,48 @@ async function getFileSessions(): Promise<FileSession[]> {
   }
 }
 
+/**
+ * 【P1 修复】使用 Argon2 进行密码哈希（更安全）
+ * Argon2 是 OWASP 推荐的密码哈希算法
+ */
+export async function hashPassword(password: string): Promise<string> {
+  try {
+    // 使用 Argon2 进行哈希
+    return await argon2.hash(password, {
+      type: argon2.argon2id,
+      memoryCost: 65540,  // 64 MB
+      timeCost: 3,        // 3 iterations
+      parallelism: 4,     // 4 parallel threads
+    })
+  } catch (error) {
+    console.error('Argon2 hashing error:', error)
+    // 降级到 pbkdf2（如果 argon2 不可用）
+    const salt = crypto.randomBytes(16).toString('hex')
+    const hash = crypto.pbkdf2Sync(password, salt, 310000, 64, 'sha512').toString('hex')
+    return `pbkdf2:${hash}:${salt}`
+  }
+}
+
+/**
+ * 【P1 修复】验证密码，支持多种哈希算法
+ */
+export async function verifyPassword(password: string, hash: string): Promise<boolean> {
+  try {
+    // 如果是 Argon2 格式
+    if (!hash.startsWith('pbkdf2:')) {
+      return await argon2.verify(hash, password)
+    }
+    
+    // 如果是 pbkdf2 格式
+    const [, storedHash, salt] = hash.split(':')
+    const verifyHash = crypto.pbkdf2Sync(password, salt, 310000, 64, 'sha512').toString('hex')
+    return storedHash === verifyHash
+  } catch (error) {
+    console.error('Password verification error:', error)
+    return false
+  }
+}
+
 export async function createFileUser(username: string, email: string, password: string) {
   const users = await getFileUsers()
   
@@ -119,8 +162,8 @@ export async function createFileUser(username: string, email: string, password: 
     return { error: '该用户名已被使用' }
   }
 
-  const salt = crypto.randomBytes(16).toString('hex')
-  const hash = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex')
+  // 【P1 修复】使用强密码哈希
+  const passwordHash = await hashPassword(password)
   
   const user: FileUser = {
     id: crypto.randomUUID(),
@@ -130,7 +173,7 @@ export async function createFileUser(username: string, email: string, password: 
     bio: '',
     avatar_url: '',
     plan: 'free',
-    password_hash: `${hash}:${salt}`,
+    password_hash: passwordHash,
     created_at: new Date().toISOString(),
   }
   
@@ -144,9 +187,9 @@ export async function verifyFilePassword(email: string, password: string) {
   const user = users.find(u => u.email === email)
   if (!user) return null
   
-  const [hash, salt] = user.password_hash.split(':')
-  const verifyHash = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex')
-  return hash === verifyHash ? user : null
+  // 【P1 修复】使用增强的密码验证
+  const isValid = await verifyPassword(password, user.password_hash)
+  return isValid ? user : null
 }
 
 export async function createFileSession(userId: string): Promise<string> {
