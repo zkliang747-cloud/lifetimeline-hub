@@ -8,6 +8,7 @@ interface Props {
   entry?: {
     id: string;
     year: number;
+    month?: number;
     title: string;
     content: string;
     tags: string[];
@@ -20,6 +21,7 @@ interface Props {
 
 export default function TimelineForm({ entry, onSuccess, onCancel }: Props) {
   const [year, setYear] = useState(entry?.year || new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(entry?.month || 0);
   const [title, setTitle] = useState(entry?.title || '');
   const [content, setContent] = useState(entry?.content || '');
   const [tags, setTags] = useState(entry?.tags?.join(', ') || '');
@@ -35,6 +37,7 @@ export default function TimelineForm({ entry, onSuccess, onCancel }: Props) {
     try {
       const payload = {
         year: Number(year),
+        month: entry?.month || selectedMonth,
         title,
         content,
         tags: tags.split(',').map(t => t.trim()).filter(Boolean),
@@ -89,6 +92,23 @@ export default function TimelineForm({ entry, onSuccess, onCancel }: Props) {
           {yearOptions.map((yr) => (
             <option key={yr} value={yr}>
               {yr}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* 月份 */}
+      <div>
+        <label className="block text-sm font-medium text-[#57534E] mb-2">月份</label>
+        <select
+          value={selectedMonth}
+          onChange={e => setSelectedMonth(Number(e.target.value))}
+          className="w-full px-4 py-3 rounded-xl border border-[#E7E5E4] bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#B45309]/20 focus:border-[#B45309] transition-all appearance-none cursor-pointer sm:min-h-[44px]"
+        >
+          <option value={0}>全年</option>
+          {Array.from({ length: 12 }, (_, i) => (
+            <option key={i + 1} value={i + 1}>
+              {i + 1}月
             </option>
           ))}
         </select>

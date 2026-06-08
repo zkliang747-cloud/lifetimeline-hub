@@ -74,6 +74,7 @@ export async function POST(req: NextRequest) {
 
     if (error) throw error;
 
+    // 记录积分变动日志
     await supabaseAdmin
       .from('credit_logs')
       .insert([{
@@ -83,8 +84,7 @@ export async function POST(req: NextRequest) {
         balance_before: currentCredits,
         balance_after: newCredits,
         created_at: new Date().toISOString(),
-      }])
-      .catch(() => {});
+      }]);
 
     return NextResponse.json({
       success: true,

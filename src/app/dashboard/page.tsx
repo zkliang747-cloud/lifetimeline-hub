@@ -11,6 +11,7 @@ interface TimelineEntry {
   id: string;
   user_id: string;
   year: number;
+  month?: number;
   title: string;
   content: string;
   tags: string[];
@@ -107,7 +108,7 @@ export default function Dashboard() {
           <div className="flex gap-2 w-full sm:w-auto">
             {entries.length > 0 && (
               <PDFExporter
-                entries={entries}
+                entries={entries as any}
                 username={user?.username || '用户'}
                 onExport={handleExportPDF}
               />
