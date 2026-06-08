@@ -42,16 +42,9 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
-  --font-sans:
-    'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', ui-sans-serif,
-    system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-    'Helvetica Neue', Arial, sans-serif;
-  --font-mono:
-    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
-    'Courier New', monospace;
-  --font-serif:
-    'Noto Serif SC', 'Songti SC', 'SimSun', ui-serif, Georgia, Cambria,
-    'Times New Roman', Times, serif;
+  --font-sans: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  --font-serif: 'Noto Serif SC', 'Songti SC', 'SimSun', ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
 }
 
 :root {
@@ -136,7 +129,35 @@ body {
   @apply font-sans;
 }
 
-/* Timeline-specific animations */
+/* 移动端优化 */
+@media (max-width: 640px) {
+  input, textarea, button, select {
+    min-height: 44px;
+  }
+
+  html {
+    position: fixed;
+    width: 100%;
+  }
+
+  select {
+    font-size: 16px;
+  }
+
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  textarea {
+    font-size: 16px;
+  }
+
+  .fixed {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Timeline animations */
 @keyframes fadeSlideIn {
   from {
     opacity: 0;
@@ -155,4 +176,17 @@ body {
 /* Smooth scrolling */
 html {
   scroll-behavior: smooth;
+}
+
+/* 禁用 iOS 缩放 */
+input,
+textarea,
+select {
+  -webkit-user-select: text;
+  -webkit-touch-callout: none;
+}
+
+/* 提升 touch 区域反馈 */
+button {
+  -webkit-tap-highlight-color: transparent;
 }
